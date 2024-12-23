@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Random GIF</title>
+    <style>
+        body {
+            background-color: #FFFFFF;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .gif-container {
+            display: inline-block;
+            border: 10px solid #191970;
+            padding: 10px;
+            margin: 20px;
+        }
+        .reload-button {
+            background-color: #191970;
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 20px;
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .reload-button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <p>Total visitors: {{ visitor_count }}</p>
+    
+    <div class="gif-container">
+        {% if gif_url %}
+            <img src="{{ gif_url }}" alt="Random GIF" />
+        {% else %}
+            <p>No GIF found in the database.</p>
+        {% endif %}
+    </div>
+    <br />
+    <form action="/" method="get">
+        <button class="reload-button" type="submit">Click here to get another gif!</button>
+    </form>
+</body>
+</html>
