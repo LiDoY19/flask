@@ -11,7 +11,7 @@ pipeline{
         stage('build docker image'){
             steps{
                 echo "building docker image"
-                sh "dcoker build -t lidoy/gif_app_project ."
+                sh "sudo dcoker build -t lidoy/gif_app_project ."
             }
         }
         stage('Push docker image'){
