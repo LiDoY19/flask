@@ -4,7 +4,7 @@ pipeline{
     stages {
         stage ('Checkout SCM'){
             steps{
-                echo checkout scm
+                checkout scm
             }
         }
 
@@ -16,7 +16,7 @@ pipeline{
         }
         stage('Push docker image'){
             when {
-                brance "main" //cuz we want to push images to the prod and don't want to push things something in dev
+                branch "main" //cuz we want to push images to the prod and don't want to push things something in dev
             }
             steps{
                 echo "pushing docker images"
