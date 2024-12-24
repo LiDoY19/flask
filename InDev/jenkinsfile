@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_COMPOSE_FILE = 'docker-compose.yaml'
+        IMAGE_NAME = 'your-dockerhub-username/your-image-name' // Replace with your Docker Hub repo
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code from SCM...'
+                checkout scm
+            }
+        }
+
+        stage('Cleaning Process') {
+            steps {
+                script {
+                    echo 'Stopping and removing all containers...'
+                    sh """
+                    if [ -f ${DOCKER_COMPOSE_FILE} ]; then
+                        docker-compose down -v || echo 'No running containers to stop.'
+                    else
+                        echo '${DOCKER_COMPOSE_FILE} not found.'
+                        exit 1
+                    fi
+                    """
+                }
+            }
+        }
+
+        stage('Up New Compose File') {
+            steps {
+                script {
+                    echo 'Starting new containers with docker-compose...'
+                    sh """
+                    if [ -f ${DOCKER_COMPOSE_FILE} ]; then
+                        docker-compose up -d
+                    else
+                        echo '${DOCKER_COMPOSE_FILE} not found.'
+                        exit 1
+                    fi
+                    """
+                }
+            }
+        }
+
+        stage('Testing') {
+            steps {
+                script {
+                    echo 'Testing the application using curl...'
+                    sh """
+                    sleep 10 # Wait for containers to initialize
+                    curl -f http://localhost:5000 || exit 1
+                    """
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    echo 'Tagging and pushing images to Docker Hub...'
+                    sh """
+                    # Login to Docker Hub
+                    echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                    
+                    # Pull the latest version for tagging
+                    docker pull ${IMAGE_NAME}:latest || true
+                    
+                    # Tag the current latest image as the previous version
+                    PREVIOUS_TAG=$(docker images ${IMAGE_NAME} --format '{{.Tag}}' | grep -v 'latest' | sort -r | head -n 1)
+                    if [ -n "$PREVIOUS_TAG" ]; then
+                        docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:${PREVIOUS_TAG}.0
+                        docker push ${IMAGE_NAME}:${PREVIOUS_TAG}.0
+                    fi
+                    
+                    # Tag the new image as the latest
+                    docker-compose build
+                    docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:latest
+                    docker push ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
+        }
+    }
+}
