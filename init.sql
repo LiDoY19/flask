@@ -1,8 +1,9 @@
+USE mydatabase;
+
 CREATE TABLE IF NOT EXISTS gifs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     url VARCHAR(255) NOT NULL
 );
-USE mydatabase;
 
 INSERT INTO gifs (url) VALUES 
 ('https://c.tenor.com/-VFGlrBlcSwAAAAd/tenor.gif'),
