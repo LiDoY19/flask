@@ -49,12 +49,6 @@ pipeline {
                     usernamePassword(credentialsId: 'db_credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')
                 ]) {
                     sh """
-                    # Export sensitive information as environment variables
-                    export MYSQL_ROOT_PASSWORD=$DB_PASSWORD
-                    export MYSQL_DATABASE=$DB_NAME
-                    export DB_HOST=${DB_HOST}
-                    export DB_PORT=${DB_PORT}
-                    
                     # Build and start Docker containers
                     docker-compose build
                     docker-compose up -d
