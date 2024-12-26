@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_FILE = 'docker-compose.yaml' // The docker-compose file name
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml' // The docker-compose file name
         APP_SERVICE_NAME = 'my_app_service' // Replace with your main service name in docker-compose
         VERSION = "1.0.${BUILD_NUMBER}" // Generate a unique version tag
         DB_HOST = 'localhost' // Non-sensitive: database host
