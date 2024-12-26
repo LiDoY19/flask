@@ -26,7 +26,7 @@ pipeline {
                     # Check if docker-compose.yaml exists
                     if [ -f ${DOCKER_COMPOSE_FILE} ]; then
                         echo 'Found docker-compose.yaml. Stopping running containers...'
-                        docker compose down || echo 'No containers to stop.' // Stop containers if they are running
+                        docker compose -p my_project down || echo 'No containers to stop.' // Stop containers if they are running
                     else
                         echo '${DOCKER_COMPOSE_FILE} not found in workspace.'
                         exit 1 // Exit pipeline if docker-compose file is missing
@@ -53,7 +53,7 @@ pipeline {
                     # Pass the credentials to Docker Compose and Build and start Docker containers
                     export MYSQL_ROOT_PASSWORD=$DB_PASSWORD
                     docker compose build
-                    docker compose up -d
+                    docker compose -p my_project up -d
                     """
                 }
             }
