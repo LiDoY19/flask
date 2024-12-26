@@ -65,12 +65,13 @@ pipeline {
             script {
                 withCredentials([
                     usernamePassword(credentialsId: 'db_credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')
-                ])
+                ]){
                 echo 'Testing database connection...'
                 sh """
-                sleep 10
+                sleep 15
                 docker exec mysql_db mysql -uroot -p${DB_PASSWORD} -e "SHOW DATABASES;"
                 """
+                }
             }
         }
     }
@@ -80,7 +81,7 @@ pipeline {
                 script {
                     echo 'Running curl tests to verify the application...'
                     sh """
-                    sleep 10 # Wait for containers to initialize
+                    sleep 15 # Wait for containers to initialize
                     curl -f http://localhost:5001 || (echo 'Application is not running' && exit 1) // Test the application
                     echo 'Application is running as expected.'
                     """
