@@ -49,7 +49,11 @@ pipeline {
                     usernamePassword(credentialsId: 'db_credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')
                 ]) {
                     sh """
-                    # Build and start Docker containers
+                    echo "Using DB_USER: $DB_USER"
+                    echo "Using DB_PASSWORD: $DB_PASSWORD"
+                    
+                    # Pass the credentials to Docker Compose and Build and start Docker containers
+                    export MYSQL_ROOT_PASSWORD=$DB_PASSWORD
                     docker-compose build
                     docker-compose up -d
                     """
