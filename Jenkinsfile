@@ -26,7 +26,7 @@ pipeline {
                     # Check if docker-compose.yaml exists
                     if [ -f ${DOCKER_COMPOSE_FILE} ]; then
                         echo 'Found docker-compose.yaml. Stopping running containers...'
-                        docker-compose down || echo 'No containers to stop.' // Stop containers if they are running
+                        docker compose down || echo 'No containers to stop.' // Stop containers if they are running
                     else
                         echo '${DOCKER_COMPOSE_FILE} not found in workspace.'
                         exit 1 // Exit pipeline if docker-compose file is missing
