@@ -5,8 +5,6 @@ pipeline {
         DOCKER_COMPOSE_FILE = 'docker-compose.yaml' // The docker-compose file name
         APP_SERVICE_NAME = 'my_app_service' // Replace with your main service name in docker-compose
         VERSION = "1.0.${BUILD_NUMBER}" // Generate a unique version tag
-        DB_USER = credentials('db_user') // Securely retrieve the database username
-        DB_PASSWORD = credentials('db_password') // Securely retrieve the database password
         DB_HOST = 'localhost' // Non-sensitive: database host
         DB_NAME = 'mydatabase' // Non-sensitive: database name
         DB_PORT = '3307' // Non-sensitive: DATA BASE port
