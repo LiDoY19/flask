@@ -52,8 +52,8 @@ pipeline {
                     
                     # Pass the credentials to Docker Compose and Build and start Docker containers
                     export MYSQL_ROOT_PASSWORD=$DB_PASSWORD
-                    docker-compose build
-                    docker-compose up -d
+                    docker compose build
+                    docker compose up -d
                     """
                 }
             }
