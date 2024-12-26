@@ -82,7 +82,7 @@ pipeline {
                     echo 'Running curl tests to verify the application...'
                     sh """
                     sleep 15 # Wait for containers to initialize
-                    curl -f http://localhost:5001 || (echo 'Application is not running' && exit 1) // Test the application
+                    curl -f http://localhost:5001 || (echo 'Application is not running' && exit 1) # Test the application
                     echo 'Application is running as expected.'
                     """
                 }
