@@ -63,6 +63,9 @@ pipeline {
     stage('Verify DB Connection') {
         steps {
             script {
+                withCredentials([
+                    usernamePassword(credentialsId: 'db_credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')
+                ])
                 echo 'Testing database connection...'
                 sh """
                 sleep 10
