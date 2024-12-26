@@ -64,10 +64,10 @@ pipeline {
         steps {
             script {
                 echo 'Testing database connection...'
-                sh '''
+                sh """
                 sleep 10
                 docker exec mysql_db mysql -uroot -p${DB_PASSWORD} -e "SHOW DATABASES;"
-                '''
+                """
             }
         }
     }
