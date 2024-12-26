@@ -50,17 +50,27 @@ pipeline {
                 ]) {
                     sh """
                     # Export sensitive information as environment variables
-                    export DB_USER=${DB_USER}
-                    export DB_PASSWORD=${DB_PASSWORD}
+                    export MYSQL_ROOT_PASSWORD=$DB_PASSWORD
+                    export MYSQL_DATABASE=$DB_NAME
                     export DB_HOST=${DB_HOST}
-                    export DB_NAME=${DB_NAME}
-                    export DB_PORT=${PORT}
+                    export DB_PORT=${DB_PORT}
                     
                     # Build and start Docker containers
                     docker-compose build
                     docker-compose up -d
                     """
                 }
+            }
+        }
+    }
+
+    stage('Verify DB Connection') {
+        steps {
+            script {
+                echo 'Testing database connection...'
+                sh '''
+                docker exec mysql_db mysql -uroot -p${DB_PASSWORD} -e "SHOW DATABASES;"
+                '''
             }
         }
     }
