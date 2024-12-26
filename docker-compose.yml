@@ -20,7 +20,6 @@ services:
   web:
     build: .
     container_name: flask_app
-    # Pass the .env file to the container as well, if needed
     ports:
       - "5001:5000"
     depends_on:
