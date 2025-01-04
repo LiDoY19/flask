@@ -28,6 +28,8 @@ pipeline {
                         fi
                         docker compose -p ${PROJECT_NAME} down || true
                         docker system prune -f || true
+                        docker network prune -f || true
+                        docker volume prune -f || true
                     """
 
                     echo 'Building and starting Docker containers...'
@@ -35,8 +37,9 @@ pipeline {
                         usernamePassword(credentialsId: 'db_credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')
                     ]) {
                         sh """
-                            docker compose -p ${PROJECT_NAME} build
-                            docker compose -p ${PROJECT_NAME} up -d
+                            export MYSQL_ROOT_PASSWORD=\$DB_PASSWORD
+                            docker-compose -p ${PROJECT_NAME} build
+                            docker-compose -p ${PROJECT_NAME} up -d
                         """
                     }
                 }
