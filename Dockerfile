@@ -6,7 +6,7 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && apt-get install -y default-mysql-client && rm -rf /var/lib/apt/lists/*
 
-FROM mysql8:0
+FROM mysql:8.0
 COPY init.sql /docker-entrypoint-initdb.d/
 
 COPY . /app
