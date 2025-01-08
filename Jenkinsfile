@@ -56,7 +56,7 @@ pipeline {
                         sh """
                             # Wait for MySQL to be ready. For simplicity, a short sleep:
                             sleep 15
-                            docker exec mysql_db mysql -u\root -p${DB_PASSWORD} -e "SHOW DATABASES;"
+                            docker exec mysql_db mysql -uroot -p${DB_PASSWORD} -e "SHOW DATABASES;"
                         """
                     }
 
