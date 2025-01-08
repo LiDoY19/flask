@@ -99,8 +99,8 @@ pipeline {
             echo 'Pipeline failed. Check logs for details.'
         }
         // If you want containers to be torn down after each run:
-        always {
-            sh "docker compose -p ${PROJECT_NAME} down || true"
-        }
+//        always {
+//            sh "docker compose -p ${PROJECT_NAME} down || true"
+//        }
     }
 }
