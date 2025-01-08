@@ -63,7 +63,7 @@ pipeline {
                     echo 'Testing application...'
                     sh """
                         # Wait for app to be ready:
-                        sleep 15
+                        sleep 30
                         curl -f http://localhost:5001 || (echo 'Application is not running' && exit 1)
                     """
                 }
