@@ -6,16 +6,16 @@ CREATE TABLE IF NOT EXISTS visitors (
     count INT NOT NULL DEFAULT 0
 );
 
--- Optionally seed an initial row so you have `id=1`:
+
 INSERT INTO visitors (id, count) VALUES (1, 0);
 
--- If you also need the `gifs` table:
+
 CREATE TABLE IF NOT EXISTS gifs (
     id INT PRIMARY KEY AUTO_INCREMENT,
     url VARCHAR(255) NOT NULL
 );
 
--- Optionally seed some rows:
+
 INSERT INTO gifs (url) VALUES
 ('https://c.tenor.com/-VFGlrBlcSwAAAAd/tenor.gif'),
 ('https://c.tenor.com/0fI0vd8FEsoAAAAd/tenor.gif'),
