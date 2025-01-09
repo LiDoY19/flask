@@ -100,7 +100,7 @@ pipeline {
         }
         // If you want containers to be torn down after each run:
 //        always {
-//            sh "docker compose -p ${PROJECT_NAME} down || true"
+//            sh "docker compose -p ${PROJECT_NAME} down -v || true"
 //        }
     }
 }
