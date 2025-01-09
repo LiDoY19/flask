@@ -7,6 +7,8 @@ services:
       MYSQL_DATABASE: mydatabase
     volumes:
       - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
     ports:
       - "3307:3306"
     healthcheck:
