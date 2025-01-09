@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE   = 'docker-compose.yml'
         PROJECT_NAME          = 'my_project'
-        IMAGE_NAME            = 'flask-app'
+        IMAGE_NAME            = 'gif_app_project'
         DOCKERHUB_REPO        = 'lidoy/gif_app_project'
         VERSION               = "1.0.${BUILD_NUMBER}"
     }
