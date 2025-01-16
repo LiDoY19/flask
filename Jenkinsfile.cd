@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE          = "lidoy/gif_app_project:latest"
+        EC2_PUBLIC_IP         = "<your-ec2-instance-public-ip>"
+        SSH_KEY_CREDENTIALS   = "EC2_SSH_KEY"                  
+        AWS_REGION            = "us-east-1"
+        AZURE_RESOURCE_GROUP = "MyResourceGroup"
+        AZURE_APP_SERVICE    = "MyAppService"
+        DOCKERHUB_CREDENTIALS = "DOCKERHUB_CREDENTIALS"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out source code..."
+                checkout scm
+            }
+        }
+
+        stage('Deploy to EC2') {
+            steps {
+                echo "Deploying to EC2 instance..."
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'EC2_SSH_KEY',
+                    keyFileVariable: 'EC2_KEY_FILE',
+                    usernameVariable: 'EC2_USERNAME'
+                )]) {
+                    sh """
+                        ssh -i $EC2_KEY_FILE $EC2_USERNAME@$EC2_PUBLIC_IP << 'EOF'
+                            echo "Stopping existing container..."
+                            docker stop gif-app || true
+                            docker rm gif-app || true
+
+                            echo "Pulling latest Docker image..."
+                            docker pull $DOCKER_IMAGE
+
+                            echo "Starting new container..."
+                            docker run -d --name gif-app -p 80:80 $DOCKER_IMAGE
+
+                            echo "Deployment to EC2 completed!"
+                        EOF
+                    """
+                }
+            }
+        }
+
+         stage('Deploy to Azure') {
+            steps {
+                echo "Deploying to Azure..."
+                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                    sh """
+                        # Log in to Azure
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        
+                        # Deploy to Azure App Service
+                        az webapp config container set \
+                            --name $AZURE_APP_SERVICE \
+                            --resource-group $AZURE_RESOURCE_GROUP \
+                            --docker-custom-image-name $DOCKER_IMAGE \
+                            --enable-cd true
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment completed successfully!"
+        }
+        failure {
+            echo "Deployment failed. Check logs for details."
+        }
+    }
+}
