@@ -10,6 +10,12 @@ pipeline {
     }
 
     stages {
+        stage('Clean Up'){
+            steps {
+                echo 'cleaning up the working directory'
+                sh "docker compose -p ${PROJECT_NAME} down -v || true"
+            }
+        }
         stage('Checkout') {
             steps {
                 echo 'Checking out source code...'
@@ -98,9 +104,5 @@ pipeline {
         failure {
             echo 'Pipeline failed. Check logs for details.'
         }
-        // If you want containers to be torn down after each run:
-//        always {
-//            sh "docker compose -p ${PROJECT_NAME} down -v || true"
-//        }
     }
 }
