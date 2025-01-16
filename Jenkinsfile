@@ -80,16 +80,17 @@ pipeline {
             steps {
                 script {
                     echo 'Tagging and pushing Docker images to Docker Hub...'
+                    echo "Using Docker Hub repo: ${DOCKERHUB_REPO}, Image name: ${IMAGE_NAME}, Version: ${VERSION}"
                     withCredentials([
                         usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')
                     ]) {
                         sh """
                             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                            docker tag ${IMAGE_NAME}:latest ${DOCKERHUB_REPO}/${IMAGE_NAME}:${VERSION}
-                            docker tag ${IMAGE_NAME}:latest ${DOCKERHUB_REPO}/${IMAGE_NAME}:latest
+                            docker tag ${IMAGE_NAME}:latest ${DOCKERHUB_REPO}:${VERSION}
+                            docker tag ${IMAGE_NAME}:latest ${DOCKERHUB_REPO}:latest
 
-                            docker push ${DOCKERHUB_REPO}/${IMAGE_NAME}:${VERSION}
-                            docker push ${DOCKERHUB_REPO}/${IMAGE_NAME}:latest
+                            docker push ${DOCKERHUB_REPO}:${VERSION}
+                            docker push ${DOCKERHUB_REPO}:latest
                         """
                     }
                 }
