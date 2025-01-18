@@ -2,13 +2,18 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE          = "lidoy/gif_app_project:latest"
-        EC2_PUBLIC_IP         = "<your-ec2-instance-public-ip>"
-        SSH_KEY_CREDENTIALS   = "EC2_SSH_KEY"                  
-        AWS_REGION            = "us-east-1"
-        AZURE_RESOURCE_GROUP = "MyResourceGroup"
-        AZURE_APP_SERVICE    = "MyAppService"
-        DOCKERHUB_CREDENTIALS = "DOCKERHUB_CREDENTIALS"
+        // Docker-related variables
+        DOCKER_REPO            = "lidoy/gif_app_project"
+        DOCKER_IMAGE_VERSION   = "gif_app_project:latest"
+        
+        // AWS-related variables
+        AWS_REGION             = "us-east-1"
+        EC2_INSTANCE_TAG_KEY   = "flaskapp"              // Tag key for EC2 instance identification
+        EC2_INSTANCE_TAG_VALUE = "flaskapp-test"    // Tag value for EC2 instance identification
+
+        // Azure-related variables
+        AZURE_RESOURCE_GROUP   = "MyResourceGroup"
+        AZURE_APP_SERVICE      = "MyAppService"
     }
 
     stages {
@@ -18,50 +23,34 @@ pipeline {
                 checkout scm
             }
         }
-
-        stage('Deploy to EC2') {
+        
+        stage('Get EC2 Public IP') {
             steps {
-                echo "Deploying to EC2 instance..."
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'EC2_SSH_KEY',
-                    keyFileVariable: 'EC2_KEY_FILE',
-                    usernameVariable: 'EC2_USERNAME'
-                )]) {
-                    sh """
-                        ssh -i $EC2_KEY_FILE $EC2_USERNAME@$EC2_PUBLIC_IP << 'EOF'
-                            echo "Stopping existing container..."
-                            docker stop gif-app || true
-                            docker rm gif-app || true
-
-                            echo "Pulling latest Docker image..."
-                            docker pull $DOCKER_IMAGE
-
-                            echo "Starting new container..."
-                            docker run -d --name gif-app -p 80:80 $DOCKER_IMAGE
-
-                            echo "Deployment to EC2 completed!"
-                        EOF
-                    """
+                echo "Fetching EC2 instance public IP..."
+                withAWSCredentials {
+                    script {
+                        env.EC2_PUBLIC_IP = fetchEC2PublicIP()
+                        // Check for empty IP (e.g., instance not found or not running)
+                        if (!env.EC2_PUBLIC_IP) {
+                            error "No EC2 public IP found. Aborting deployment."
+                        }
+                        echo "EC2 Public IP: ${env.EC2_PUBLIC_IP}"
+                    }
                 }
             }
         }
 
-         stage('Deploy to Azure') {
+        stage('Deploy to EC2') {
             steps {
-                echo "Deploying to Azure..."
-                withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
-                    sh """
-                        # Log in to Azure
-                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-                        
-                        # Deploy to Azure App Service
-                        az webapp config container set \
-                            --name $AZURE_APP_SERVICE \
-                            --resource-group $AZURE_RESOURCE_GROUP \
-                            --docker-custom-image-name $DOCKER_IMAGE \
-                            --enable-cd true
-                    """
-                }
+                echo "Deploying to EC2 instance at ${env.EC2_PUBLIC_IP}..."
+                withSSHCredentials {deployToEC2(env.EC2_PUBLIC_IP)}
+            }
+        }
+
+        stage('Deploy to Azure') {
+            steps {
+                echo "Deploying to Azure App Service..."
+                withAzureCredentials {deployToAzure()}
             }
         }
     }
@@ -69,9 +58,125 @@ pipeline {
     post {
         success {
             echo "Deployment completed successfully!"
+            // Example: send slack or email notifications here
+            // slackSend channel: '#devops', message: "Deployment succeeded!"
         }
         failure {
             echo "Deployment failed. Check logs for details."
+            // Example: send slack or email notifications here
+            // slackSend channel: '#devops', message: "Deployment failed!"
         }
     }
+}
+
+/* ---------- Utility & Helper Methods ---------- */
+
+/**
+ * Wrap AWS credentials.
+ * Adjust to use ephemeral environment variables for security.
+ */
+def withAWSCredentials(Closure body) {
+    withCredentials([
+        [$class: 'AmazonWebServicesCredentialsBinding', 
+         credentialsId: 'AWS_CREDENTIALS']  // Replace with your AWS credentials ID
+    ]) {
+        body()
+    }
+}
+
+/**
+ * Fetch the EC2 Public IP based on instance tags.
+ */
+def fetchEC2PublicIP() {
+    return sh(
+        script: """
+            # Configure AWS CLI to use the Jenkins-bound credentials
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region ${AWS_REGION}
+
+            # Fetch the EC2 public IP
+            aws ec2 describe-instances \\
+                --filters "Name=tag:${EC2_INSTANCE_TAG_KEY},Values=${EC2_INSTANCE_TAG_VALUE}" \\
+                          "Name=instance-state-name,Values=running" \\
+                --query "Reservations[*].Instances[*].PublicIpAddress" \\
+                --output text
+        """,
+        returnStdout: true
+    ).trim()
+}
+
+/**
+ * Wrap SSH private key credentials.
+ */
+def withSSHCredentials(Closure body) {
+    withCredentials([
+        sshUserPrivateKey(
+            credentialsId: 'aws_ssh_key',   // Replace with your SSH key credentials ID
+            keyFileVariable: 'EC2_KEY_FILE',
+            usernameVariable: 'EC2_USERNAME'
+        )
+    ]) {
+        body()
+    }
+}
+
+/**
+ * Deploy Docker container to EC2 via SSH.
+ */
+def deployToEC2(ec2PublicIp) {
+    sh """
+        ssh -o StrictHostKeyChecking=no -i $EC2_KEY_FILE $EC2_USERNAME@${ec2PublicIp} << 'EOF'
+            echo "Stopping existing container..."
+            docker stop gif-app || true
+            docker rm gif-app || true
+
+            echo "Pulling latest Docker image..."
+            docker pull ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION}
+
+            echo "Starting new container..."
+            docker run -d --name gif-app -p 80:80 ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION}
+
+            echo "Deployment to EC2 completed!"
+        EOF
+    """
+}
+
+/**
+ * Wrap Azure Service Principal credentials.
+ */
+def withAzureCredentials(Closure body) {
+    withCredentials([
+        azureServicePrincipal(
+            credentialsId: 'AZURE_CREDENTIALS', // Replace with your Azure SP credentials ID
+            subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
+            clientIdVariable: 'AZURE_CLIENT_ID',
+            clientSecretVariable: 'AZURE_CLIENT_SECRET',
+            tenantIdVariable: 'AZURE_TENANT_ID'
+        )
+    ]) {
+        body()
+    }
+}
+
+/**
+ * Deploy a container image to Azure App Service.
+ */
+def deployToAzure() {
+    sh """
+        echo "Logging in to Azure CLI..."
+        az login --service-principal \\
+            -u $AZURE_CLIENT_ID \\
+            -p $AZURE_CLIENT_SECRET \\
+            --tenant $AZURE_TENANT_ID > /dev/null
+
+        echo "Setting container image for Azure App Service..."
+        az webapp config container set \\
+            --name ${AZURE_APP_SERVICE} \\
+            --resource-group ${AZURE_RESOURCE_GROUP} \\
+            --docker-custom-image-name ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION} \\
+            --enable-cd true
+
+        echo "Deployment to Azure App Service completed!"
+    """
 }

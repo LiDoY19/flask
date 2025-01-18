@@ -10,6 +10,11 @@ pipeline {
     }
 
     stages {
+        stage('Description'){
+            steps{
+                echo 'Runnig CI pipeline:'
+            }
+        }
         stage('Clean Up'){
             steps {
                 echo 'cleaning up the working directory'
