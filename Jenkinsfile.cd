@@ -1,15 +1,17 @@
+#!/usr/bin/env groovy
+
 pipeline {
     agent any
 
     environment {
-        // Docker-related variables
-        DOCKER_REPO            = "lidoy/gif_app_project"
-        DOCKER_IMAGE_VERSION   = "gif_app_project:latest"
+        // Docker-related variables (point to the image produced by your CI pipeline)
+        DOCKER_REPO             = "lidoy/gif_app_project"
+        DOCKER_IMAGE_VERSION    = "gif_app_project:latest"
         
         // AWS-related variables
         AWS_REGION             = "us-east-1"
-        EC2_INSTANCE_TAG_KEY   = "flaskapp"              // Tag key for EC2 instance identification
-        EC2_INSTANCE_TAG_VALUE = "flaskapp-test"    // Tag value for EC2 instance identification
+        EC2_INSTANCE_TAG_KEY   = "flaskapp"
+        EC2_INSTANCE_TAG_VALUE = "flaskapp-test"
 
         // Azure-related variables
         AZURE_RESOURCE_GROUP   = "MyResourceGroup"
@@ -17,22 +19,26 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout (Optional)') {
             steps {
-                echo "Checking out source code..."
-                checkout scm
+                script {
+                    // If you need to pull scripts/config from your repo for the deployment
+                    // (e.g., a deploy script or configs), do so here.
+                    // If not, you may remove this stage.
+                    echo "Checking out repository (if needed for deployment scripts)..."
+                    checkout scm
+                }
             }
         }
-        
+
         stage('Get EC2 Public IP') {
             steps {
-                echo "Fetching EC2 instance public IP..."
-                withAWSCredentials {
-                    script {
+                script {
+                    echo "Fetching EC2 instance public IP via AWS CLI..."
+                    withAWSCredentials {
                         env.EC2_PUBLIC_IP = fetchEC2PublicIP()
-                        // Check for empty IP (e.g., instance not found or not running)
                         if (!env.EC2_PUBLIC_IP) {
-                            error "No EC2 public IP found. Aborting deployment."
+                            error "No running EC2 instance found with tags '${EC2_INSTANCE_TAG_KEY}=${EC2_INSTANCE_TAG_VALUE}'. Aborting."
                         }
                         echo "EC2 Public IP: ${env.EC2_PUBLIC_IP}"
                     }
@@ -40,62 +46,72 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to AWS EC2') {
             steps {
-                echo "Deploying to EC2 instance at ${env.EC2_PUBLIC_IP}..."
-                withSSHCredentials {deployToEC2(env.EC2_PUBLIC_IP)}
+                script {
+                    echo "Deploying Docker container to EC2 instance at ${env.EC2_PUBLIC_IP}..."
+                    withSSHCredentials {
+                        deployToEC2(env.EC2_PUBLIC_IP)
+                    }
+                    echo "Deployment to EC2 completed!"
+                }
             }
         }
 
         stage('Deploy to Azure') {
             steps {
-                echo "Deploying to Azure App Service..."
-                withAzureCredentials {deployToAzure()}
+                script {
+                    echo "Deploying Docker container to Azure App Service..."
+                    withAzureCredentials {
+                        deployToAzure()
+                    }
+                    echo "Deployment to Azure App Service completed!"
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Deployment completed successfully!"
-            // Example: send slack or email notifications here
-            // slackSend channel: '#devops', message: "Deployment succeeded!"
+            echo "CD pipeline completed successfully!"
+            // Optionally send notifications (Slack, email, etc.)
         }
         failure {
-            echo "Deployment failed. Check logs for details."
-            // Example: send slack or email notifications here
-            // slackSend channel: '#devops', message: "Deployment failed!"
+            echo "CD pipeline failed. Check logs for details."
+            // Optionally send notifications (Slack, email, etc.)
         }
     }
 }
 
-/* ---------- Utility & Helper Methods ---------- */
+/* -------------------------------------------------------------------------- */
+/*                 Helper Methods & Credentials Wrappers                      */
+/* -------------------------------------------------------------------------- */
 
 /**
- * Wrap AWS credentials.
- * Adjust to use ephemeral environment variables for security.
+ * Wrap AWS credentials from Jenkins
  */
 def withAWSCredentials(Closure body) {
     withCredentials([
         [$class: 'AmazonWebServicesCredentialsBinding', 
-         credentialsId: 'AWS_CREDENTIALS']  // Replace with your AWS credentials ID
+         credentialsId: 'AWS_CREDENTIALS'] // Replace with your AWS credential ID in Jenkins
     ]) {
         body()
     }
 }
 
 /**
- * Fetch the EC2 Public IP based on instance tags.
+ * Fetch the public IP of the EC2 instance by tag key/value.
  */
 def fetchEC2PublicIP() {
     return sh(
         script: """
-            # Configure AWS CLI to use the Jenkins-bound credentials
-            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            set -e
+            # Configure AWS CLI to use Jenkins-bound credentials
+            aws configure set aws_access_key_id \$AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key \$AWS_SECRET_ACCESS_KEY
             aws configure set default.region ${AWS_REGION}
 
-            # Fetch the EC2 public IP
+            # Query EC2 for running instances with the specified tag
             aws ec2 describe-instances \\
                 --filters "Name=tag:${EC2_INSTANCE_TAG_KEY},Values=${EC2_INSTANCE_TAG_VALUE}" \\
                           "Name=instance-state-name,Values=running" \\
@@ -107,12 +123,12 @@ def fetchEC2PublicIP() {
 }
 
 /**
- * Wrap SSH private key credentials.
+ * Wrap SSH private key credentials for SSH-based deployment to EC2.
  */
 def withSSHCredentials(Closure body) {
     withCredentials([
         sshUserPrivateKey(
-            credentialsId: 'aws_ssh_key',   // Replace with your SSH key credentials ID
+            credentialsId: 'aws_ssh_key',  // Replace with your Jenkins SSH key credential ID
             keyFileVariable: 'EC2_KEY_FILE',
             usernameVariable: 'EC2_USERNAME'
         )
@@ -122,22 +138,21 @@ def withSSHCredentials(Closure body) {
 }
 
 /**
- * Deploy Docker container to EC2 via SSH.
+ * Deploy to the EC2 instance using SSH and Docker commands.
  */
 def deployToEC2(ec2PublicIp) {
     sh """
-        ssh -o StrictHostKeyChecking=no -i $EC2_KEY_FILE $EC2_USERNAME@${ec2PublicIp} << 'EOF'
-            echo "Stopping existing container..."
+        set -e
+        ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${ec2PublicIp} << 'EOF'
+            echo "Stopping any existing container named 'gif-app'..."
             docker stop gif-app || true
             docker rm gif-app || true
 
-            echo "Pulling latest Docker image..."
-            docker pull ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION}
+            echo "Pulling the Docker image..."
+            docker pull ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}
 
             echo "Starting new container..."
-            docker run -d --name gif-app -p 80:80 ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION}
-
-            echo "Deployment to EC2 completed!"
+            docker run -d --name gif-app -p 80:80 ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}
         EOF
     """
 }
@@ -148,7 +163,7 @@ def deployToEC2(ec2PublicIp) {
 def withAzureCredentials(Closure body) {
     withCredentials([
         azureServicePrincipal(
-            credentialsId: 'AZURE_CREDENTIALS', // Replace with your Azure SP credentials ID
+            credentialsId: 'AZURE_CREDENTIALS',  // Replace with your Azure credential ID
             subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
             clientIdVariable: 'AZURE_CLIENT_ID',
             clientSecretVariable: 'AZURE_CLIENT_SECRET',
@@ -160,23 +175,22 @@ def withAzureCredentials(Closure body) {
 }
 
 /**
- * Deploy a container image to Azure App Service.
+ * Deploy to Azure App Service using Azure CLI.
  */
 def deployToAzure() {
     sh """
+        set -e
         echo "Logging in to Azure CLI..."
-        az login --service-principal \\
-            -u $AZURE_CLIENT_ID \\
-            -p $AZURE_CLIENT_SECRET \\
-            --tenant $AZURE_TENANT_ID > /dev/null
+        az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant \$AZURE_TENANT_ID >/dev/null
 
-        echo "Setting container image for Azure App Service..."
+        echo "Configuring App Service to use container: ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}"
         az webapp config container set \\
             --name ${AZURE_APP_SERVICE} \\
             --resource-group ${AZURE_RESOURCE_GROUP} \\
-            --docker-custom-image-name ${env.DOCKER_REPO}:${env.DOCKER_IMAGE_VERSION} \\
+            --docker-custom-image-name ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION} \\
             --enable-cd true
 
-        echo "Deployment to Azure App Service completed!"
+        echo "Logout from Azure..."
+        az logout
     """
 }
