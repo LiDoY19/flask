@@ -1,71 +1,86 @@
-#!/usr/bin/env groovy
-
 pipeline {
     agent any
 
     environment {
-        // Docker-related variables (point to the image produced by your CI pipeline)
-        DOCKER_REPO             = "lidoy/gif_app_project"
-        DOCKER_IMAGE_VERSION    = "gif_app_project:latest"
-        
-        // AWS-related variables
-        AWS_REGION             = "us-east-1"
-        EC2_INSTANCE_TAG_KEY   = "flaskapp"
-        EC2_INSTANCE_TAG_VALUE = "flaskapp-test"
-
-        // Azure-related variables
-        AZURE_RESOURCE_GROUP   = "MyResourceGroup"
-        AZURE_APP_SERVICE      = "MyAppService"
+        AWS_REGION              = "us-east-1"
+        EC2_INSTANCE_TAG_KEY    = "flaskapp"          // Tag key used to identify the EC2 instance
+        EC2_INSTANCE_TAG_VALUE  = "flaskapp-test"     // Tag value used to identify the EC2 instance
+        DOCKER_IMAGE            = "lidoy/gif_app_project:latest" 
     }
 
     stages {
-        stage('Checkout (Optional)') {
+        stage('Checkout') {
             steps {
-                script {
-                    // If you need to pull scripts/config from your repo for the deployment
-                    // (e.g., a deploy script or configs), do so here.
-                    // If not, you may remove this stage.
-                    echo "Checking out repository (if needed for deployment scripts)..."
-                    checkout scm
-                }
+                echo "Checking out code (if needed for deployment scripts or config)..."
+                checkout scm
             }
         }
 
         stage('Get EC2 Public IP') {
             steps {
                 script {
-                    echo "Fetching EC2 instance public IP via AWS CLI..."
-                    withAWSCredentials {
-                        env.EC2_PUBLIC_IP = fetchEC2PublicIP()
+                    echo "Retrieving EC2 public IP using AWS CLI..."
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws_cred'
+                    ]]) {
+                        // Run an inline shell script to call AWS CLI
+                        env.EC2_PUBLIC_IP = sh(
+                            script: """
+                                set -e
+                                # Configure AWS CLI with Jenkins-provided creds
+                                aws configure set aws_access_key_id \$AWS_ACCESS_KEY_ID
+                                aws configure set aws_secret_access_key \$AWS_SECRET_ACCESS_KEY
+                                aws configure set default.region ${AWS_REGION}
+
+                                # Describe instances by tag, filter for 'running' state, extract public IP
+                                aws ec2 describe-instances \\
+                                    --filters "Name=tag:${EC2_INSTANCE_TAG_KEY},Values=${EC2_INSTANCE_TAG_VALUE}" \\
+                                              "Name=instance-state-name,Values=running" \\
+                                    --query "Reservations[*].Instances[*].PublicIpAddress" \\
+                                    --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+
                         if (!env.EC2_PUBLIC_IP) {
-                            error "No running EC2 instance found with tags '${EC2_INSTANCE_TAG_KEY}=${EC2_INSTANCE_TAG_VALUE}'. Aborting."
+                            error "No running EC2 instance found with tag '${EC2_INSTANCE_TAG_KEY}=${EC2_INSTANCE_TAG_VALUE}'."
                         }
-                        echo "EC2 Public IP: ${env.EC2_PUBLIC_IP}"
+
+                        echo "Found EC2 Public IP: ${env.EC2_PUBLIC_IP}"
                     }
                 }
             }
         }
 
-        stage('Deploy to AWS EC2') {
+        stage('Deploy to EC2') {
             steps {
                 script {
-                    echo "Deploying Docker container to EC2 instance at ${env.EC2_PUBLIC_IP}..."
-                    withSSHCredentials {
-                        deployToEC2(env.EC2_PUBLIC_IP)
-                    }
-                    echo "Deployment to EC2 completed!"
-                }
-            }
-        }
+                    echo "Deploying Flask app to EC2 instance at ${env.EC2_PUBLIC_IP}..."
+                    withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'aws_ssh_key',
+                            keyFileVariable: 'EC2_KEY_FILE', 
+                            usernameVariable: 'EC2_USERNAME'
+                        )
+                    ]) {
+                        sh """
+                            set -e
+                            ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${env.EC2_PUBLIC_IP} << 'EOF'
+                                echo "Stopping existing container..."
+                                docker stop flask-app || true
+                                docker rm flask-app || true
 
-        stage('Deploy to Azure') {
-            steps {
-                script {
-                    echo "Deploying Docker container to Azure App Service..."
-                    withAzureCredentials {
-                        deployToAzure()
+                                echo "Pulling latest Docker image..."
+                                docker pull ${DOCKER_IMAGE}
+
+                                echo "Starting new container..."
+                                docker run -d --name flask-app -p 80:80 ${DOCKER_IMAGE}
+
+                                echo "Deployment complete!"
+                            EOF
+                        """
                     }
-                    echo "Deployment to Azure App Service completed!"
                 }
             }
         }
@@ -73,124 +88,12 @@ pipeline {
 
     post {
         success {
-            echo "CD pipeline completed successfully!"
-            // Optionally send notifications (Slack, email, etc.)
+            echo "Deployment pipeline completed successfully!"
+            // Optionally send Slack/email notifications here
         }
         failure {
-            echo "CD pipeline failed. Check logs for details."
-            // Optionally send notifications (Slack, email, etc.)
+            echo "Deployment pipeline failed. Please check the logs."
+            // Optionally send Slack/email notifications here
         }
     }
-}
-
-/* -------------------------------------------------------------------------- */
-/*                 Helper Methods & Credentials Wrappers                      */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Wrap AWS credentials from Jenkins
- */
-def withAWSCredentials(Closure body) {
-    withCredentials([
-        [$class: 'AmazonWebServicesCredentialsBinding', 
-         credentialsId: 'AWS_CREDENTIALS'] // Replace with your AWS credential ID in Jenkins
-    ]) {
-        body()
-    }
-}
-
-/**
- * Fetch the public IP of the EC2 instance by tag key/value.
- */
-def fetchEC2PublicIP() {
-    return sh(
-        script: """
-            set -e
-            # Configure AWS CLI to use Jenkins-bound credentials
-            aws configure set aws_access_key_id \$AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key \$AWS_SECRET_ACCESS_KEY
-            aws configure set default.region ${AWS_REGION}
-
-            # Query EC2 for running instances with the specified tag
-            aws ec2 describe-instances \\
-                --filters "Name=tag:${EC2_INSTANCE_TAG_KEY},Values=${EC2_INSTANCE_TAG_VALUE}" \\
-                          "Name=instance-state-name,Values=running" \\
-                --query "Reservations[*].Instances[*].PublicIpAddress" \\
-                --output text
-        """,
-        returnStdout: true
-    ).trim()
-}
-
-/**
- * Wrap SSH private key credentials for SSH-based deployment to EC2.
- */
-def withSSHCredentials(Closure body) {
-    withCredentials([
-        sshUserPrivateKey(
-            credentialsId: 'aws_ssh_key',  // Replace with your Jenkins SSH key credential ID
-            keyFileVariable: 'EC2_KEY_FILE',
-            usernameVariable: 'EC2_USERNAME'
-        )
-    ]) {
-        body()
-    }
-}
-
-/**
- * Deploy to the EC2 instance using SSH and Docker commands.
- */
-def deployToEC2(ec2PublicIp) {
-    sh """
-        set -e
-        ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${ec2PublicIp} << 'EOF'
-            echo "Stopping any existing container named 'gif-app'..."
-            docker stop gif-app || true
-            docker rm gif-app || true
-
-            echo "Pulling the Docker image..."
-            docker pull ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}
-
-            echo "Starting new container..."
-            docker run -d --name gif-app -p 80:80 ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}
-        EOF
-    """
-}
-
-/**
- * Wrap Azure Service Principal credentials.
- */
-def withAzureCredentials(Closure body) {
-    withCredentials([
-        azureServicePrincipal(
-            credentialsId: 'AZURE_CREDENTIALS',  // Replace with your Azure credential ID
-            subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
-            clientIdVariable: 'AZURE_CLIENT_ID',
-            clientSecretVariable: 'AZURE_CLIENT_SECRET',
-            tenantIdVariable: 'AZURE_TENANT_ID'
-        )
-    ]) {
-        body()
-    }
-}
-
-/**
- * Deploy to Azure App Service using Azure CLI.
- */
-def deployToAzure() {
-    sh """
-        set -e
-        echo "Logging in to Azure CLI..."
-        az login --service-principal -u \$AZURE_CLIENT_ID -p \$AZURE_CLIENT_SECRET --tenant \$AZURE_TENANT_ID >/dev/null
-
-        echo "Configuring App Service to use container: ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION}"
-        az webapp config container set \\
-            --name ${AZURE_APP_SERVICE} \\
-            --resource-group ${AZURE_RESOURCE_GROUP} \\
-            --docker-custom-image-name ${DOCKER_REPO}:${DOCKER_IMAGE_VERSION} \\
-            --enable-cd true
-
-        echo "Logout from Azure..."
-        az logout
-    """
 }
