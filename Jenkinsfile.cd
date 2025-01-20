@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION              = "us-east-1d"
+        AWS_REGION              = "us-east-1"
         EC2_INSTANCE_TAG_KEY    = "flaskapp"          // Tag key used to identify the EC2 instance
         EC2_INSTANCE_TAG_VALUE  = "flaskapp-test"     // Tag value used to identify the EC2 instance
         DOCKER_IMAGE            = "lidoy/gif_app_project:latest" 
