@@ -67,6 +67,7 @@ pipeline {
                         sh """
                             set -e
                             ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${env.EC2_PUBLIC_IP} << 'EOF'
+                                echo "Connected successfully to EC2"
                                 echo "Stopping existing container..."
                                 docker stop flask-app || true
                                 docker rm flask-app || true
