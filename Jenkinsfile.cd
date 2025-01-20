@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         AWS_REGION              = "us-east-1d"
-        EC2_INSTANCE_TAG_KEY    = "Name"          // Tag key used to identify the EC2 instance
-        EC2_INSTANCE_TAG_VALUE  = "flaskapp"     // Tag value used to identify the EC2 instance
+        EC2_INSTANCE_TAG_KEY    = "flaskapp"          // Tag key used to identify the EC2 instance
+        EC2_INSTANCE_TAG_VALUE  = "flaskapp-test"     // Tag value used to identify the EC2 instance
         DOCKER_IMAGE            = "lidoy/gif_app_project:latest" 
     }
 
