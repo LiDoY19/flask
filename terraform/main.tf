@@ -106,6 +106,7 @@ resource "aws_instance" "gif_app_instance" {
     # Install python3-pip to get docker-compose via pip
     yum install -y python3-pip
     pip3 install docker-compose
+    usermod -a -G docker ec2-user
 
     # Enable & start Docker
     systemctl enable docker
@@ -113,8 +114,8 @@ resource "aws_instance" "gif_app_instance" {
 
     # Clone your GitHub repo containing Dockerfile & docker-compose.yml
     cd /home/ec2-user
-    git clone https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git
-    cd YOUR_REPO_NAME
+    git clone https://github.com/LiDoY19/flask.git
+    cd flask
 
     # (Optional) If you have a specific branch: git checkout main
 
