@@ -1,2 +1,22 @@
-# Ignore .env file
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+# Add any secrets or env files you don't want to commit
 .env
+.dockerignore
