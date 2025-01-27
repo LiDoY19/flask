@@ -59,7 +59,7 @@ pipeline {
                     echo "Deploying Flask app to EC2 instance at ${env.EC2_PUBLIC_IP}..."
                     withCredentials([
                         sshUserPrivateKey(
-                            credentialsId: 'aws_ssh_key',
+                            credentialsId: 'n_ssh_key',
                             keyFileVariable: 'EC2_KEY_FILE', 
                             usernameVariable: 'EC2_USERNAME'
                         )
