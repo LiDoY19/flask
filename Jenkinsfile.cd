@@ -71,13 +71,13 @@ ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${env.EC2_PUBLI
     echo "Connected successfully to EC2"
     echo "Stopping and removing any existing containers..."
     cd /home/ec2-user/gifproject
-    docker compose down || true
+    docker-compose down || true
 
     echo "Pulling the latest Docker image..."
-    docker compose pull 
+    docker-compose pull 
 
     echo "Starting new container..."
-    docker compose up --build -d
+    docker-compose up --build -d
 
     echo "Deployment complete!"
 EOF
