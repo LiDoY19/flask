@@ -1,5 +1,3 @@
-# Variables
-
 variable "aws_region" {
   type    = string
   default = "us-east-1"
@@ -42,8 +40,3 @@ variable "security_group_id" {
   description = "Security group ID for EC2."
 }
 
-variable "subnet_id" {
-  type        = string
-  default     = "vpc-0f02d37e277549c82"
-  description = "Subnet ID for EC2."
-}
