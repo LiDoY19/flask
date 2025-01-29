@@ -1,31 +1,59 @@
+
+# Terraform Configuration (Terraform Cloud)
+
 terraform {
+  required_version = ">= 1.0.0"
+
+  # Configure Terraform Cloud integration
+  cloud {
+    organization = "YOUR_TERRAFORM_CLOUD_ORG"
+    workspaces {
+      name = "YOUR_TERRAFORM_WORKSPACE"
+    }
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
   }
-  # Optionally configure backend here or in backend.tf
-  # backend "s3" {
-  #   bucket = "my-terraform-state-bucket"
-  #   key    = "path/to/my-flask-app.tfstate"
-  #   region = "us-east-1"
-  # }
 }
+
+
+# AWS Provider
 
 provider "aws" {
-  region = var.region
-  # If you rely on Jenkins-provided AWS credentials, 
-  # you can set them via environment variables, or an AWS profile, etc.
+  region = var.aws_region
+  # Credentials typically come from:
+  # 1) Terraform Cloud variable sets
+  # 2) Environment variables
+  # 3) A workspace-specific config
 }
 
-# Create a key pair if you don't already have one
+
+# S3 Bucket
+
+resource "aws_s3_bucket" "project_bucket" {
+  bucket = var.s3_bucket_name
+  acl    = "private"
+
+  tags = {
+    Name = var.s3_bucket_name
+  }
+}
+
+
+# Key Pair (Public Key)
+
 resource "aws_key_pair" "this" {
   key_name   = var.key_name
-  public_key = file(var.public_key_path)
+  public_key = file(var.keypair_public_key_path)
 }
 
-# Create the EC2 instance
+
+# EC2 Instance
+
 resource "aws_instance" "flask_ec2" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
@@ -33,23 +61,23 @@ resource "aws_instance" "flask_ec2" {
   subnet_id              = var.subnet_id
   key_name               = aws_key_pair.this.key_name
 
-  user_data = <<-EOF
+  # User data to install Docker & Docker Compose
+  user_data = <<-EOT
     #!/bin/bash
-    # Example for Amazon Linux 2
     yum update -y
-    echo "Installing docker..."
     amazon-linux-extras install docker -y
     systemctl start docker
     systemctl enable docker
     usermod -aG docker ec2-user
 
+    # Install Docker Compose v2 (CLI plugin)
     mkdir -p /usr/local/lib/docker/cli-plugins
-    curl -SL https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+    curl -SL https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-x86_64 \
+      -o /usr/local/lib/docker/cli-plugins/docker-compose
     chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-    echo "Docker Compose v2 is now available as 'docker compose'..."
-  EOF
+  EOT
 
   tags = {
-    Name = var.ec2_tag_name
+    Name = "FlaskAppEC2"
   }
 }
