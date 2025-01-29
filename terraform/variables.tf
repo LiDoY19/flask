@@ -8,7 +8,7 @@ variable "aws_region" {
 
 variable "s3_bucket_name" {
   type    = string
-  default = "my-flask-bucket"
+  default = "flaskapp-bucket"
   description = "Name of the S3 bucket."
 }
 
@@ -26,7 +26,7 @@ variable "keypair_public_key_path" {
 
 variable "ami_id" {
   type        = string
-  default     = "ami-00000000000000000"
+  default     = "ami-01816d07b1128cd2d"
   description = "AMI ID for the EC2 instance (e.g., Amazon Linux 2)."
 }
 
@@ -38,12 +38,12 @@ variable "instance_type" {
 
 variable "security_group_id" {
   type        = string
-  default     = "sg-00000000000000000"
+  default     = "sg-0814e623c096c1220"
   description = "Security group ID for EC2."
 }
 
 variable "subnet_id" {
   type        = string
-  default     = "subnet-00000000000000000"
+  default     = "vpc-0f02d37e277549c82"
   description = "Subnet ID for EC2."
 }
