@@ -1,4 +1,3 @@
-
 # Terraform Configuration (Terraform Cloud)
 
 terraform {
