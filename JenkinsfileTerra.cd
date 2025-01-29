@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Derive Public Key') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'n_ssh_key',
+                        keyFileVariable: 'PRIVATE_KEY_FILE'
+                    )
+                ]) {
+                    sh """
+                        echo "Deriving public key from the private key..."
+                        # Extract the public key to a temporary file
+                        ssh-keygen -y -f \$PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
+                        echo "Public key created at /tmp/flask_pub_key.pub!"
+                        ls -l /tmp/flask_pub_key.pub
+                    """
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    sh """
+                        cd terraform
+                        terraform init
+                        
+                        terraform plan \\
+                          -var \"keypair_public_key_path=/tmp/flask_pub_key.pub\" \\
+                          -var \"key_name=flask_pub_key\"
+
+                        terraform apply -auto-approve \\
+                          -var \"keypair_public_key_path=/tmp/flask_pub_key.pub\" \\
+                          -var \"key_name=flask_pub_key\"
+                    """
+                }
+            }
+        }
+    }
+}
