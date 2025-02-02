@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    eniroment{
+        Terraform_Token = credentialsId(['terraform_token'])
+    }
 
     stages {
         stage('Checkout') {
