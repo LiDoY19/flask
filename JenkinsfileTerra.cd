@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment{
-        Terraform_Token = credentials(['terraform_token'])
+        TERRAFORM_TOKEN = credentials(['terraform_token'])
     }
 
     stages {
@@ -34,6 +34,15 @@ pipeline {
             steps {
                 script {
                     sh """
+                        mkdir -p ~/.terraform.d
+                        cat << EOF > ~/.terraform.d/credentials.tfrc.json{
+                            "credentials":{
+                                "app.terraform.io":{
+                                    "token": "${TERRAFORM_TOKEN}"
+                                    }
+                                }
+                            }
+EOF
                         cd terraform
                         terraform init
                         
