@@ -8,7 +8,3 @@ output "ec2_instance_id" {
   value       = aws_instance.flask_ec2.id
 }
 
-output "s3_bucket_name" {
-  description = "Name of the S3 bucket"
-  value       = aws_s3_bucket.project_bucket.bucket
-}

@@ -30,14 +30,6 @@ data "aws_default_subnet" "public" {
   availability_zone = "us-east-1a"
 }
 
-resource "aws_s3_bucket" "project_bucket" {
-  bucket = var.s3_bucket_name
-  acl    = "private"
-  tags = {
-    Name = var.s3_bucket_name
-  }
-}
-
 resource "aws_key_pair" "this" {
   key_name   = var.key_name
   public_key = file(var.keypair_public_key_path)

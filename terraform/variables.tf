@@ -4,12 +4,6 @@ variable "aws_region" {
   description = "AWS region to deploy into."
 }
 
-variable "s3_bucket_name" {
-  type    = string
-  default = "flaskapp-bucket"
-  description = "Name of the S3 bucket."
-}
-
 variable "key_name" {
   type    = string
   default = "my-project-key"
