@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment{
-        Terraform_Token = credentialsId(['terraform_token'])
+        Terraform_Token = credentials(['terraform_token'])
     }
 
     stages {
