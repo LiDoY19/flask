@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    eniroment{
+    environment{
         Terraform_Token = credentialsId(['terraform_token'])
     }
 
