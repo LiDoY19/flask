@@ -17,12 +17,12 @@ pipeline {
                         keyFileVariable: 'PRIVATE_KEY_FILE'
                     )
                 ]) {
-                    sh """
+                    sh '''
                         echo "Deriving public key from the private key..."
-                        ssh-keygen -y -f \$PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
+                        ssh-keygen -y -f $PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
                         echo "Public key created at /tmp/flask_pub_key.pub!"
                         ls -l /tmp/flask_pub_key.pub
-                    """
+                    '''
                 }
             }
         }
@@ -36,6 +36,7 @@ pipeline {
                         echo '    "token": "'"$TERRAFORM_TOKEN"'"' >> ~/.terraform.d/credentials.tfrc.json
                         echo '  }' >> ~/.terraform.d/credentials.tfrc.json
                         echo '}}' >> ~/.terraform.d/credentials.tfrc.json
+
                         cd terraform
                         terraform init
                         terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
