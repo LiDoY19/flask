@@ -7,7 +7,7 @@ terraform {
   cloud {
     organization = "lidoy19"
     workspaces {
-      name = "YOUR_TERRAFORM_WORKSPACE"
+      name = "flaskapp-1114"
     }
   }
 
