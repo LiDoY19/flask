@@ -1,16 +1,14 @@
 pipeline {
     agent any
-    environment{
+    environment {
         TERRAFORM_TOKEN = credentials('terraform_token')
     }
-
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-
         stage('Derive Public Key') {
             steps {
                 withCredentials([
@@ -21,7 +19,6 @@ pipeline {
                 ]) {
                     sh """
                         echo "Deriving public key from the private key..."
-                        # Extract the public key to a temporary file
                         ssh-keygen -y -f \$PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
                         echo "Public key created at /tmp/flask_pub_key.pub!"
                         ls -l /tmp/flask_pub_key.pub
@@ -29,31 +26,21 @@ pipeline {
                 }
             }
         }
-
         stage('Terraform Apply') {
             steps {
-                script {
-                    sh """
+                withCredentials([string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')]) {
+                    sh '''
                         mkdir -p ~/.terraform.d
-                        cat << EOF > ~/.terraform.d/credentials.tfrc.json{
-                            "credentials":{
-                                "app.terraform.io":{
-                                    "token": "${TERRAFORM_TOKEN}"
-                                    }
-                                }
-                            }
-EOF
+                        echo '{ "credentials": {' > ~/.terraform.d/credentials.tfrc.json
+                        echo '  "app.terraform.io": {' >> ~/.terraform.d/credentials.tfrc.json
+                        echo '    "token": "'"$TERRAFORM_TOKEN"'"' >> ~/.terraform.d/credentials.tfrc.json
+                        echo '  }' >> ~/.terraform.d/credentials.tfrc.json
+                        echo '}}' >> ~/.terraform.d/credentials.tfrc.json
                         cd terraform
                         terraform init
-                        
-                        terraform plan \\
-                          -var \"keypair_public_key_path=/tmp/flask_pub_key.pub\" \\
-                          -var \"key_name=flask_pub_key\"
-
-                        terraform apply -auto-approve \\
-                          -var \"keypair_public_key_path=/tmp/flask_pub_key.pub\" \\
-                          -var \"key_name=flask_pub_key\"
-                    """
+                        terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
+                        terraform apply -auto-approve -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
+                    '''
                 }
             }
         }
