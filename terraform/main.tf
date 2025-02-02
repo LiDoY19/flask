@@ -5,7 +5,7 @@ terraform {
 
   # Configure Terraform Cloud integration
   cloud {
-    organization = "YOUR_TERRAFORM_CLOUD_ORG"
+    organization = "lidoy19"
     workspaces {
       name = "YOUR_TERRAFORM_WORKSPACE"
     }
@@ -54,6 +54,10 @@ resource "aws_instance" "flask_ec2" {
     curl -SL https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-x86_64 \
       -o /usr/local/lib/docker/cli-plugins/docker-compose
     chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+    docker-compose up -d
+
+
   EOT
 
   tags = {
