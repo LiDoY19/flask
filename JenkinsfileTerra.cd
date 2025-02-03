@@ -17,12 +17,13 @@ pipeline {
                         keyFileVariable: 'PRIVATE_KEY_FILE'
                     )
                 ]) {
-                    sh '''
+                    sh(script: '''
+                        #!/bin/bash
                         echo "Deriving public key from the private key..."
                         ssh-keygen -y -f $PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
                         echo "Public key created at /tmp/flask_pub_key.pub!"
                         ls -l /tmp/flask_pub_key.pub
-                    '''
+                    ''', shell: '/bin/bash')
                 }
             }
         }
@@ -32,22 +33,21 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_cred', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
                     string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
                 ]) {
-                    sh '''
+                    sh(script: '''
+                        #!/bin/bash
                         echo "AWS_ACCESS_KEY_ID = $AWS_ACCESS_KEY_ID"
                         echo "AWS_SECRET_ACCESS_KEY = ${AWS_SECRET_ACCESS_KEY:0:4}****"
-
                         mkdir -p ~/.terraform.d
                         echo '{ "credentials": {' > ~/.terraform.d/credentials.tfrc.json
                         echo '  "app.terraform.io": {' >> ~/.terraform.d/credentials.tfrc.json
                         echo '    "token": "'"$TERRAFORM_TOKEN"'"' >> ~/.terraform.d/credentials.tfrc.json
                         echo '  }' >> ~/.terraform.d/credentials.tfrc.json
                         echo '}}' >> ~/.terraform.d/credentials.tfrc.json
-
                         cd terraform
                         terraform init
                         terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
                         terraform apply -auto-approve -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
-                    '''
+                    ''', shell: '/bin/bash')
                 }
             }
         }
