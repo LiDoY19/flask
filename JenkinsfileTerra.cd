@@ -33,6 +33,9 @@ pipeline {
                     string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
                 ]) {
                     sh '''
+                        echo "AWS_ACCESS_KEY_ID = $AWS_ACCESS_KEY_ID"
+                        echo "AWS_SECRET_ACCESS_KEY = ${AWS_SECRET_ACCESS_KEY:0:4}****"
+
                         mkdir -p ~/.terraform.d
                         echo '{ "credentials": {' > ~/.terraform.d/credentials.tfrc.json
                         echo '  "app.terraform.io": {' >> ~/.terraform.d/credentials.tfrc.json
