@@ -45,6 +45,7 @@ pipeline {
 
                         cd terraform
                         terraform init
+                        terraform workspace select flaskapp1114-t || terraform workspace new flaskapp1114-t
                         terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
                         terraform apply -auto-approve -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
                     '''
