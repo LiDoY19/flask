@@ -18,6 +18,7 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                        #!/bin/bash
                         echo "Deriving public key from the private key..."
                         ssh-keygen -y -f $PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
                         echo "Public key created at /tmp/flask_pub_key.pub!"
@@ -33,6 +34,7 @@ pipeline {
                     string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
                 ]) {
                     sh '''
+                        #!/bin/bash
                         echo "AWS_ACCESS_KEY_ID = $AWS_ACCESS_KEY_ID"
                         echo "AWS_SECRET_ACCESS_KEY = ${AWS_SECRET_ACCESS_KEY:0:4}****"
 
