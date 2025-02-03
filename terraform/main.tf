@@ -26,7 +26,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_default_subnet" "public" {
+resource "aws_default_subnet" "public" {
   availability_zone = "us-east-1a"
 }
 
