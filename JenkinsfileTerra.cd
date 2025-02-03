@@ -13,7 +13,7 @@ pipeline {
             steps {
                 withCredentials([
                     sshUserPrivateKey(
-                        credentialsId: 'n_ssh_key',
+                        credentialsId: 'aws_credential',
                         keyFileVariable: 'PRIVATE_KEY_FILE'
                     )
                 ]) {
