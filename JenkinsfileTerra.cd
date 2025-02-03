@@ -17,12 +17,12 @@ pipeline {
                         keyFileVariable: 'PRIVATE_KEY_FILE'
                     )
                 ]) {
-                    sh '''
+                    sh(script: '''\
                         echo "Deriving public key from the private key..."
                         ssh-keygen -y -f $PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
                         echo "Public key created at /tmp/flask_pub_key.pub!"
                         ls -l /tmp/flask_pub_key.pub
-                    '''
+                    '''.stripIndent())
                 }
             }
         }
@@ -32,7 +32,7 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_cred', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
                     string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
                 ]) {
-                    sh '''
+                    sh(script: '''\
                         echo "AWS_ACCESS_KEY_ID = $AWS_ACCESS_KEY_ID"
                         echo "AWS_SECRET_ACCESS_KEY = ${AWS_SECRET_ACCESS_KEY:0:4}****"
 
@@ -45,10 +45,9 @@ pipeline {
 
                         cd terraform
                         terraform init
-                        terraform workspace select flaskapp1114-t || terraform workspace new flaskapp1114-t
                         terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
                         terraform apply -auto-approve -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
-                    '''
+                    '''.stripIndent())
                 }
             }
         }
