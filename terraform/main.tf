@@ -1,15 +1,15 @@
 # Terraform Configuration (Terraform Cloud)
 
-#terraform {
-# required_version = ">= 1.0.0"
+terraform {
+ required_version = ">= 1.0.0"
 
-#  # Configure Terraform Cloud integration
-#  cloud {
-#    organization = "lidoy19"
-#    workspaces {
-#      name = "flaskapp1114-t"
-#    }
-#  }
+  # Configure Terraform Cloud integration
+  cloud {
+    organization = "lidoy19"
+    workspaces {
+      name = "flaskapp1114-t"
+    }
+  }
 
   required_providers {
     aws = {
