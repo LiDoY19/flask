@@ -26,13 +26,9 @@ pipeline {
                 }
             }
         }
-        stage('Terraform Apply') {
+       stage('Terraform Apply') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws_access_key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws_secret_key', variable: 'AWS_SECRET_ACCESS_KEY'),
-                    string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
-                ]) {
+                withCredentials([string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')]) {
                     sh '''
                         mkdir -p ~/.terraform.d
                         echo '{ "credentials": {' > ~/.terraform.d/credentials.tfrc.json
