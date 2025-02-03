@@ -29,7 +29,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'aws_cred', variable: 'AWS_ACCESS_KEY_ID'),
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_cred', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
                     string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
                 ]) {
                     sh '''
