@@ -1,12 +1,12 @@
 terraform {
   required_version = ">= 1.0.0"
   # Comment out or remove the Terraform Cloud block
-  # cloud {
-  #   organization = "lidoy19"
-  #   workspaces {
-  #     name = "flaskapp1114-t"
-  #   }
-  # }
+    cloud {
+      organization = "lidoy19"
+      workspaces {
+        name = "flaskapp1114-t"
+    }
+  }
 
   required_providers {
     aws = {
