@@ -8,31 +8,33 @@ pipeline {
                 cleanWs()  // Cleans up the workspace to ensure a fresh build environment
             }
         }
+
+        // Stage 2: Checkout Code
         stage('Checkout') {
             steps {
-                echo "Checking out code (if needed for deployment scripts or config)..."
+                echo "Checking out code..."
                 checkout scm
             }
         }
 
-
+        // Stage 3: Terraform Deployment
         stage('Terraform') {
             steps {
                 withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
                     script {
-                        dir("/terraform") {
-                                sh '''
-                                    echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
-                                    export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
-                                    
-                                    terraform init
-                                    terraform plan -out=tfplan
-                                    terraform apply -auto-approve tfplan
-                                '''
-                            }
+                        dir('terraform') {  
+                            sh '''
+                                echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
+                                export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
+
+                                terraform init
+                                terraform plan -out=tfplan
+                                terraform apply -auto-approve
+                            '''
                         }
                     }
                 }
             }
         }
     }
+}
