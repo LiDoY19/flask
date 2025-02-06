@@ -12,7 +12,7 @@ variable "key_name" {
 
 variable "keypair_public_key_path" {
   type        = string
-  default     = "./mykey.pub"
+  default     = "/Users/lironmizrahi/Documents/devopscourse/terraform_keys/my_key.pub.pub"
   description = "Path to the *public* key file."
 }
 

@@ -1,35 +1,35 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: weather-app
+  name: gif_app_project
   labels:
-    app: weather-app
+    app: gif_app_project
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: weather-app
+      app: gif_app_project
   template:
     metadata:
       labels:
-        app: weather-app
+        app: gif_app_project
     spec:
       containers:
-      - name: weather-app-flask
-        image: nutzkiller/weather-app:latest
+      - name: gif_app_project
+        image: lidoy/gif_app_project:latest
         ports:
         - containerPort: 5000
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: weather-app-service
+  name: gif_app_project-service
   labels:
-    app: weather-app-service
+    app: gif_app_project-service
 spec:
   type: LoadBalancer
   selector:
-    app: weather-app
+    app: gif_app_project
   ports:
     - protocol: TCP
       port: 80
