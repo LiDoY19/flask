@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file("/Users/lironmizrahi/Documents/devopscourse/google_keys/polar-ray-449912-k6-28a0dcb2ec75.json")
+  credentials = file(var.GCP_CREDENTIALS_FILE)
   project     = "polar-ray-449912"
   region      = "us-central1"
 }
