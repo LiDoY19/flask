@@ -18,23 +18,23 @@ pipeline {
         }
 
         // Stage 3: Terraform Deployment
-        stage('Terraform') {
-            steps {
-                withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
-                    script {
-                        dir('terraform') {  
-                            sh '''
-                                echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
-                                export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
+    stage('Terraform') {
+        steps {
+            withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
+                script {
+                    dir('terraform') {  // Relative directory
+                        sh '''
+                            echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
+                            export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
 
-                                terraform init
-                                terraform plan -out=tfplan
-                                terraform apply -auto-approve
-                            '''
-                        }
+                            terraform init
+                            terraform plan -out=tfplan
+                            terraform apply -auto-approve
+                        '''
                     }
                 }
             }
         }
     }
+}
 }
