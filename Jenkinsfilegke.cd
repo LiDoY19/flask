@@ -27,6 +27,7 @@ pipeline {
                                 echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
                                 export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
 
+                                cd terraform
                                 terraform init
                                 terraform plan -out=tfplan
                                 terraform apply -auto-approve
