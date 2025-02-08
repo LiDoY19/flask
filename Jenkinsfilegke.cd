@@ -17,6 +17,20 @@ pipeline {
             }
         }
 
+        stage('Check GCP Key File') {
+            steps {
+                withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
+                    script {
+                        sh '''
+                            echo "Checking where Jenkins stored the credentials..."
+                            echo "Environment Variable GOOGLE_APPLICATION_CREDENTIALS: $GCP_CREDENTIALS_FILE"
+                            ls -l $GCP_CREDENTIALS_FILE || echo "File not found!"
+                        '''
+                    }
+                }
+            }
+        }
+
         // Stage 3: Terraform Deployment
         stage('Terraform') {
             steps {
