@@ -45,7 +45,6 @@ pipeline {
                             echo "Checking where Jenkins stored the credentials..."
                             echo "Environment Variable GOOGLE_APPLICATION_CREDENTIALS: $GCP_CREDENTIALS_FILE"
                             ls -l $GCP_CREDENTIALS_FILE || echo "File not found!"
-                            ls -l /tmp/*.json || echo "There is No JESON files in /tmp/"
                         '''
                     }
                 }
