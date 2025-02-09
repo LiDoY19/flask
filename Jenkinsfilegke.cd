@@ -17,6 +17,26 @@ pipeline {
             }
         }
 
+        stage('Verify Files & Directories') {
+            steps {
+                script {
+                    sh '''
+                        echo "Listing files in workspace after checkout:"
+                        ls -lah /var/lib/jenkins/workspace/gke-cd_main
+                        
+                        echo "Checking if Terraform directory exists:"
+                        if [ -d "/var/lib/jenkins/workspace/gke-cd_main/terraform" ]; then
+                            echo "Terraform directory found!"
+                            ls -lah /var/lib/jenkins/workspace/gke-cd_main/terraform
+                        else
+                            echo "Terraform directory NOT found!"
+                        fi
+                    '''
+                }
+            }
+        }
+
+
         stage('Check GCP Key File') {
             steps {
                 withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
