@@ -34,3 +34,7 @@ variable "security_group_id" {
   description = "Security group ID for EC2."
 }
 
+variable "gcp_credentials_file" {
+  description = "Path to GCP credentials file"
+  type        = string
+}

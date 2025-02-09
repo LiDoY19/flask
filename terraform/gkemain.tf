@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file(env.GOOGLE_APPLICATION_CREDENTIALS)  # Use environment variable
+  credentials = file(var.gcp_credentials_file)
   project     = "polar-ray-449912"
   region      = "us-central1"
 }
