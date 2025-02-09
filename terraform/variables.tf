@@ -41,5 +41,5 @@ variable "gcp_credentials_file" {
 
 variable "gcp_project_id" {
   type    = string
-  default = "polar-ray-449912-k6"  # ✅ Correct Project ID
+  default = "polar-ray-449912-k6"  
 }
