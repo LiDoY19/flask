@@ -62,8 +62,8 @@ pipeline {
                                 export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
 
                                 terraform init
-                                terraform plan -out=tfplan
-                                terraform apply -auto-approve
+                                terraform plan -var="gcp_credentials_file=$GCP_CREDENTIALS_FILE" -out=tfplan
+                                terraform apply -var="gcp_credentials_file=$GCP_CREDENTIALS_FILE" -auto-approve
                             '''
                         }
                     }
