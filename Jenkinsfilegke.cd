@@ -25,9 +25,7 @@ pipeline {
                             echo "Checking where Jenkins stored the credentials..."
                             echo "Environment Variable GOOGLE_APPLICATION_CREDENTIALS: $GCP_CREDENTIALS_FILE"
                             ls -l $GCP_CREDENTIALS_FILE || echo "File not found!"
-                            ls -l /tmp/*.json
-                            sudo chmod 640 /var/lib/jenkins/workspace/gke-cd_main/polar-ray-449912-k6-28a0dcb2ec75.json
-                            sudo chown jenkins:jenkins /var/lib/jenkins/workspace/gke-cd_main/polar-ray-449912-k6-28a0dcb2ec75.json
+                            ls -l /tmp/*.json || echo "There is No JESON files in /tmp/"
                         '''
                     }
                 }
@@ -39,7 +37,7 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
                     script {
-                        dir('.') {  // Make sure Terraform files are in the correct directory
+                        dir('terraform') {  // Make sure Terraform files are in the correct directory
                             sh '''
                                 echo "Using GCP credentials from $GCP_CREDENTIALS_FILE"
                                 export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDENTIALS_FILE
