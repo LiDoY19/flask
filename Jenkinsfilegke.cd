@@ -43,7 +43,7 @@ pipeline {
 
         stage('Check GCP Key File') {
             steps {
-                withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
+                withCredentials([file(credentialsId: 'TERRAFORMADMIN', variable: 'GCP_CREDENTIALS_FILE')]) {
                     script {
                         sh '''
                             echo "Checking where Jenkins stored the credentials..."
@@ -68,7 +68,7 @@ pipeline {
         // Stage 3: Terraform Deployment
         stage('Terraform') {
             steps {
-                withCredentials([file(credentialsId: 'gke_key', variable: 'GCP_CREDENTIALS_FILE')]) {
+                withCredentials([file(credentialsId: 'TERRAFORMADMIN', variable: 'GCP_CREDENTIALS_FILE')]) {
                     script {
                         dir('terraform') {  // Make sure Terraform files are in the correct directory
                             sh '''
