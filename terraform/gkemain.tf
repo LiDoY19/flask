@@ -40,52 +40,58 @@ resource "google_container_node_pool" "primary_nodes" {
   }
 }
 
-  provider "kubernetes" {
-    config_path = "~/.kube/config"
+provider "kubernetes" {
+  config_path = "~/.kube/config"
+}
+
+data "google_client_config" "default" {}
+
+resource "kubernetes_namespace" "flask_app" {
+  metadata {
+    name = "flask-app-namespace"
   }
+}
 
-  data "google_client_config" "default" {}
-
-  resource "kubernetes_namespace" "flask_app" {
-    metadata {
-      name = "flask-app-namespace"
+resource "kubernetes_deployment" "flask_app" {
+  metadata {
+    name      = "flask-app-deployment"
+    namespace = kubernetes_namespace.flask_app.metadata[0].name
+    labels    = { app = "flask-app" }
+  }
+  spec {
+    replicas = 2
+    selector {
+      match_labels = { app = "flask-app" }
     }
-  }
-
-  resource "kubernetes_deployment" "flask_app" {
-    metadata {
-      name = "flask-app-deployment"
-      namespace = kubernetes_namespace.flask_app.metadata[0].name
-      labels = {app = "flask-app}
-    }
-  }
-
-  spec{
-    replecas = 2
-    selector { match_labels = {app = "flask-app"}}
     template {
-      matadata { labels = { app = "flask-app"}}
-      spec{
-        container{
-          name = "flask-app-container"
+      metadata {
+        labels = { app = "flask-app" }
+      }
+      spec {
+        containers {
+          name  = "flask-app-container"
           image = "gif_app_project"
-          ports {container_port = 5000}
+
+          ports {
+            container_port = 5000
+          }
         }
       }
     }
   }
+}
 
-  resourse "kubernetes_service" "flask_app" {
-    metadata{
-      name = "flask-app-service"
-      namespace = kubernetes_namespace.flask_app.metadata{0}.name
-    }
-    spec{
-      selector = { app = "flask-app" }
-      port{
-        port = 80 
-        target_port = 5000
-      }
-      type = "LoadBalancer" 
-    }
+resource "kubernetes_service" "flask_app" {
+  metadata {
+    name      = "flask-app-service"
+    namespace = kubernetes_namespace.flask_app.metadata[0].name
   }
+  spec {
+    selector = { app = "flask-app" }
+    port {
+      port        = 80
+      target_port = 5000
+    }
+    type = "LoadBalancer"
+  }
+}
