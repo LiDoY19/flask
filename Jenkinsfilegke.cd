@@ -65,6 +65,14 @@ pipeline {
             }
         }
 
+        stage('Set GCP Project') {
+            steps {
+                sh '''
+                    gcloud config set project polar-ray-449912-k6
+                '''
+                }
+            }  
+
         // Stage 3: Terraform Deployment
         stage('Terraform') {
             steps {
