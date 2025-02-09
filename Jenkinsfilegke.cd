@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        GCP_PROJECT = 'polar-ray-449912-k6' // Set the correct project ID
+        GCP_PROJECT = 'polar-ray-449912-k6' // Set project ID
     }
 
     stages {
