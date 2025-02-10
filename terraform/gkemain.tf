@@ -35,18 +35,26 @@ resource "google_container_node_pool" "primary_nodes" {
 }
 
 provider "kubernetes" {
-  config_path = "~/.kube/config"
+  host = google_container_cluster.primary.endpoint
+  cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
+  token = data.google_client_config.default.access_token
+  load_config_file = false
 }
 
 data "google_client_config" "default" {}
 
 resource "kubernetes_namespace" "flask_app" {
+  depends_on = [
+    google_container_cluster.primary,
+    google_container_node_pool.primary_nodes
+  ]
   metadata {
     name = "flask-app-namespace"
   }
 }
 
 resource "kubernetes_deployment" "flask_app" {
+  depends_on = [kubernetes_namespace.flask_app]
   metadata {
     name      = "flask-app-deployment"
     namespace = kubernetes_namespace.flask_app.metadata[0].name
@@ -76,6 +84,7 @@ resource "kubernetes_deployment" "flask_app" {
 }
 
 resource "kubernetes_service" "flask_app" {
+  depends_on = [kubernetes_namespace.flask_app]
   metadata {
     name      = "flask-app-service"
     namespace = kubernetes_namespace.flask_app.metadata[0].name
