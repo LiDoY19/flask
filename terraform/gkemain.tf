@@ -7,21 +7,12 @@ provider "google" {
 data "google_container_cluster" "existing" {
   name     = "flask-app-cluster"
   location = "us-central1"
-
-  remove_default_node_pool = true
-  initial_node_count       = 1
-
-  # Enable autoscaling at the cluster level
-  node_config {
-    machine_type = "e2-medium"
-    disk_size_gb = 20
-  }
 }
 
 resource "google_container_node_pool" "primary_nodes" {
   name       = "primary-node-pool"
-  cluster    = google_container_cluster.existing.name
-  location   = google_container_cluster.existing.location
+  cluster    = data.google_container_cluster.existing.name
+  location   = data.google_container_cluster.existing.location
 
   node_count = 1
 
