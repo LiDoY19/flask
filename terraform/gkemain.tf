@@ -68,7 +68,7 @@ resource "kubernetes_deployment" "flask_app" {
         labels = { app = "flask-app" }
       }
       spec {
-        containers {
+        container {
           name  = "flask-app-container"
           image = "gif_app_project"
 
