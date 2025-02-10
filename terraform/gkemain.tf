@@ -4,7 +4,7 @@ provider "google" {
   region      = "us-central1"
 }
 
-resource "google_container_cluster" "primary" {
+data "google_container_cluster" "existing" {
   name     = "flask-app-cluster"
   location = "us-central1"
 
@@ -20,8 +20,8 @@ resource "google_container_cluster" "primary" {
 
 resource "google_container_node_pool" "primary_nodes" {
   name       = "primary-node-pool"
-  cluster    = google_container_cluster.primary.name
-  location   = google_container_cluster.primary.location
+  cluster    = google_container_cluster.existing.name
+  location   = google_container_cluster.existing.location
 
   node_count = 1
 
@@ -70,7 +70,7 @@ resource "kubernetes_deployment" "flask_app" {
       spec {
         container {
           name  = "flask-app-container"
-          image = "gif_app_project"
+          image = "gif_app_project:latest"
 
           port {
             container_port = 5000
