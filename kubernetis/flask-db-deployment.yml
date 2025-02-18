@@ -20,7 +20,7 @@ resource "kubernetes_deployment" "mysql" {
       spec {
         container {
           name  = "mysql"
-          image = "mysql:5.7"
+          image = "mysql:8.0"
 
           # Environment variables required by the MySQL image.
           env {

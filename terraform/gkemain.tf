@@ -97,3 +97,19 @@ resource "kubernetes_service" "flask_app" {
     type = "LoadBalancer"
   }
 }
+
+resource "kubernetes_service" "mysql_service" {
+  depends_on = [kubernetes_deployment.mysql]
+  metadata {
+    name      = "mysql-service"
+    namespace = kubernetes_namespace.flask_app.metadata[0].name
+  }
+  spec {
+    selector = { app = "mysql" }
+    port {
+      port        = 3306
+      target_port = 3306
+    }
+    type = "ClusterIP"
+  }
+}
