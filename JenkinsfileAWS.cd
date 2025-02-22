@@ -1,55 +1,101 @@
 pipeline {
     agent any
+
     environment {
-        TERRAFORM_TOKEN = credentials('terraform_token')
+        AWS_REGION              = "us-east-1"
+        EC2_INSTANCE_TAG_KEY    = "flaskapp"
+        EC2_INSTANCE_TAG_VALUE  = "flaskapp-test"
+        DOCKER_IMAGE            = "lidoy/gif_app_project:latest" 
     }
+
     stages {
         stage('Checkout') {
             steps {
+                echo "Checking out code (if needed for deployment scripts or config)..."
                 checkout scm
             }
         }
-        stage('Derive Public Key') {
+
+        stage('Get EC2 Public IP') {
             steps {
-                withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'aws_credential',
-                        keyFileVariable: 'PRIVATE_KEY_FILE'
-                    )
-                ]) {
-                    sh(script: '''\
-                        echo "Deriving public key from the private key..."
-                        ssh-keygen -y -f $PRIVATE_KEY_FILE > /tmp/flask_pub_key.pub
-                        echo "Public key created at /tmp/flask_pub_key.pub!"
-                        ls -l /tmp/flask_pub_key.pub
-                    '''.stripIndent())
+                script {
+                    echo "Retrieving EC2 public IP using AWS CLI..."
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws_cred'
+                    ]]) {
+                        // Run an inline shell script to call AWS CLI
+                        env.EC2_PUBLIC_IP = sh(
+                            script: """
+                                set -e
+                                # Configure AWS CLI with Jenkins-provided creds
+                                aws configure set aws_access_key_id \$AWS_ACCESS_KEY_ID
+                                aws configure set aws_secret_access_key \$AWS_SECRET_ACCESS_KEY
+                                aws configure set default.region ${AWS_REGION}
+
+                                # Describe instances by tag, filter for 'running' state, extract public IP
+                                aws ec2 describe-instances \\
+                                    --filters "Name=tag:${EC2_INSTANCE_TAG_KEY},Values=${EC2_INSTANCE_TAG_VALUE}" \\
+                                              "Name=instance-state-name,Values=running" \\
+                                    --query "Reservations[*].Instances[*].PublicIpAddress" \\
+                                    --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        if (!env.EC2_PUBLIC_IP) {
+                            error "No running EC2 instance found with tag '${EC2_INSTANCE_TAG_KEY}=${EC2_INSTANCE_TAG_VALUE}'."
+                        }
+
+                        echo "Found EC2 Public IP: ${env.EC2_PUBLIC_IP}"
+                    }
                 }
             }
         }
-        stage('Terraform Apply') {
+
+        stage('Deploy to EC2') {
             steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_cred', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'],
-                    string(credentialsId: 'terraform_token', variable: 'TERRAFORM_TOKEN')
-                ]) {
-                    sh(script: '''\
-                        echo "AWS_ACCESS_KEY_ID = $AWS_ACCESS_KEY_ID"
-                        echo "AWS_SECRET_ACCESS_KEY = $(echo $AWS_SECRET_ACCESS_KEY | cut -c1-4)****"
+                script {
+                    echo "Deploying Flask app to EC2 instance at ${env.EC2_PUBLIC_IP}..."
+                    withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'n_ssh_key',
+                            keyFileVariable: 'EC2_KEY_FILE', 
+                            usernameVariable: 'EC2_USERNAME'
+                        )
+                    ]) {
+                        sh """
+#!/bin/bash
+set -e
+ssh -o StrictHostKeyChecking=no -i \$EC2_KEY_FILE \$EC2_USERNAME@${env.EC2_PUBLIC_IP} << 'EOF'
+    echo "Connected successfully to EC2"
+    echo "Stopping and removing any existing containers..."
+    cd /home/ec2-user/gifproject
+    docker-compose down || true
 
-                        mkdir -p ~/.terraform.d
-                        echo '{ "credentials": {' > ~/.terraform.d/credentials.tfrc.json
-                        echo '  "app.terraform.io": {' >> ~/.terraform.d/credentials.tfrc.json
-                        echo '    "token": "'"$TERRAFORM_TOKEN"'"' >> ~/.terraform.d/credentials.tfrc.json
-                        echo '  }' >> ~/.terraform.d/credentials.tfrc.json
-                        echo '}}' >> ~/.terraform.d/credentials.tfrc.json
+    echo "Pulling the latest Docker image..."
+    docker-compose pull 
 
-                        cd terraform
-                        terraform init
-                        terraform plan -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
-                        terraform apply -auto-approve -var "keypair_public_key_path=/tmp/flask_pub_key.pub" -var "key_name=flask_pub_key"
-                    '''.stripIndent())
+    echo "Starting new container..."
+    docker-compose up --build -d
+
+    echo "Deployment complete!"
+EOF
+                        """
+                    }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment pipeline completed successfully!"
+            // Optionally send Slack/email notifications here
+        }
+        failure {
+            echo "Deployment pipeline failed. Please check the logs."
+            // Optionally send Slack/email notifications here
         }
     }
 }
