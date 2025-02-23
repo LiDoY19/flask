@@ -22,19 +22,20 @@ spec:
         env:
           - name: DB_HOST
             value: "127.0.0.1"
+          - name: DB_NAME
+            value: "flask-bd"
           - name: DB_PORT
             value: "3306"
           - name: DB_USER
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: db_userdetails
                 key: username
           - name: DB_PASS
             valueFrom:
               secretKeyRef:
-                name: db-credentials
+                name: db_userdetails
                 key: password
-          # Add any additional env vars your app requires
           - name: cloud-sql-proxy
             image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
             command:
