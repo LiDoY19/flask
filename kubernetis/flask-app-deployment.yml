@@ -19,6 +19,35 @@ spec:
         image: lidoy/gif_app_project:latest
         ports:
         - containerPort: 5000
+        env:
+          - name: DB_HOST
+            value: "127.0.0.1"
+          - name: DB_PORT
+            value: "3306"
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: username
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: db-credentials
+                key: password
+          # Add any additional env vars your app requires
+          - name: cloud-sql-proxy
+            image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
+            command:
+              - "/cloud_sql_proxy"
+              - "-instances=flaskproject:us-central1-c:flask-db=tcp:3306"
+              - "-credential_file=/secrets/cloudsql/credentials.json"
+            volumeMounts:
+              - name: cloudsql-instance-credentials
+                mountPath: /secrets/cloudsql
+      volumes:
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials
 ---
 apiVersion: v1
 kind: Service
