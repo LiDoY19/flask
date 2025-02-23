@@ -99,7 +99,6 @@ resource "kubernetes_service" "flask_app" {
 }
 
 resource "kubernetes_service" "mysql_service" {
-  depends_on = [kubernetes_deployment.mysql]
   metadata {
     name      = "mysql-service"
     namespace = kubernetes_namespace.flask_app.metadata[0].name
