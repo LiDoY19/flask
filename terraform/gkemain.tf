@@ -35,7 +35,7 @@ resource "google_container_node_pool" "primary_nodes" {
 }
 
 provider "kubernetes" {
-  host = google_container_cluster.primary.endpoint
+  host = "https://${google_container_cluster.primary.endpoint}"
   cluster_ca_certificate = base64decode(google_container_cluster.primary.master_auth[0].cluster_ca_certificate)
   token = data.google_client_config.default.access_token
 }
@@ -71,7 +71,7 @@ resource "kubernetes_deployment" "flask_app" {
       spec {
         container {
           name  = "flask-app-container"
-          image = "gif_app_project:latest"
+          image = "lidoy/gif_app_project:latest"
 
           port {
             container_port = 5000
