@@ -95,14 +95,17 @@ pipeline {
 
         stage('Deploy Flask App') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'DB_HOST', variable: 'DB_HOST'),
-                    string(credentialsId: 'db_userdetails', variable: 'DB_USER'),
-                    string(credentialsId: 'db_userdetails', variable: 'DB_PASSWORD'),
-                    string(credentialsId: 'DB_NAME', variable: 'DB_NAME')
-                ]) {
+                withCredentials([usernamePassword(credentialsId: 'db_userdetails', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
+                    script {
+                        env.DB_HOST = "127.0.0.1"
+                        env.DB_NAME = "flask-db"
+                    }
                     sh '''
-                        echo "Deploying Flask app to GKE..."
+                        echo "Deploying Flask app with:"
+                        echo "DB_HOST=$DB_HOST"
+                        echo "DB_NAME=$DB_NAME"
+                        echo "DB_USER=$DB_USER"
+                        
                         kubectl apply -f k8s/deployment.yaml
                     '''
                 }
