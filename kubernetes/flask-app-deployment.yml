@@ -29,12 +29,12 @@ spec:
           - name: DB_USER
             valueFrom:
               secretKeyRef:
-                name: db_userdetails
+                name: db-userdetails
                 key: username
           - name: DB_PASS
             valueFrom:
               secretKeyRef:
-                name: db_userdetails
+                name: db-userdetails
                 key: password
       - name: cloud-sql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
