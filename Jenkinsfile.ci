@@ -31,10 +31,10 @@ pipeline {
             steps {
                 script {
                     dir("${WORKSPACE}") {
-                        echo "Setting up Docker Buildx builder named Bleachbuild"
+                        echo "Setting up Docker Buildx builder named Flaskgifhbuild"
                         // Create or use an existing builder
                         sh '''
-                            docker buildx create --use --name Bleachbuild || docker buildx use Bleachbuild
+                            docker buildx create --use --name Flaskgifhbuild || docker buildx use Flaskgifhbuild
                         '''
                         echo "Building and pushing Docker image with multi-platform support..."
                         sh """
