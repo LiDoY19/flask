@@ -106,7 +106,7 @@ pipeline {
                         echo "DB_NAME=$DB_NAME"
                         echo "DB_USER=$DB_USER"
                         
-                        kubectl apply -f kubernetes/flask-app-deployment.yaml
+                        kubectl apply -f kubernetes/flask-app-deployment.yml
                     '''
                 }
             }
