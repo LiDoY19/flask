@@ -106,7 +106,7 @@ pipeline {
 
         stage('Deploy Flask App') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'db_userdetails', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
+                withCredentials([usernamePassword(credentialsId: 'db-userdetails', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASSWORD')]) {
                     script {
                         env.DB_HOST = "127.0.0.1"
                         env.DB_NAME = "flask-db"
