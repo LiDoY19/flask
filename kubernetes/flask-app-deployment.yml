@@ -36,15 +36,15 @@ spec:
               secretKeyRef:
                 name: db_userdetails
                 key: password
-          - name: cloud-sql-proxy
-            image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
-            command:
-              - "/cloud_sql_proxy"
-              - "-instances=flaskproject:us-central1-c:flask-db=tcp:3306"
-              - "-credential_file=/secrets/cloudsql/credentials.json"
-            volumeMounts:
-              - name: cloudsql-instance-credentials
-                mountPath: /secrets/cloudsql
+      - name: cloud-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.19.1
+        command:
+          - "/cloud_sql_proxy"
+          - "-instances=flaskproject:us-central1-c:flask-db=tcp:3306"
+          - "-credential_file=/secrets/cloudsql/credentials.json"
+        volumeMounts:
+          - name: cloudsql-instance-credentials
+            mountPath: /secrets/cloudsql
       volumes:
       - name: cloudsql-instance-credentials
         secret:
@@ -55,7 +55,7 @@ kind: Service
 metadata:
   name: gif-app-project-service
   labels:
-    app: gif-app-project-service
+    app: gif-app-project
 spec:
   type: LoadBalancer
   selector:
@@ -64,6 +64,3 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 5000
-
-
-
